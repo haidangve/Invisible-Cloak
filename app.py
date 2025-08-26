@@ -54,6 +54,8 @@ def capture_background():
 
     #Check if frame was read successfully
     if ret:
+        # Flip the frame horizontally to match the video stream orientation
+        frame = cv2.flip(frame, 1)
         #Store a copy of the background frame
         background_frame = frame.copy()
         print("Background captured successfully")
