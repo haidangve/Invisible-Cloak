@@ -1,5 +1,8 @@
 # Invisibility Cloak Application
 
+<img width="1281" height="584" alt="Screenshot 2025-08-27 143629" src="https://github.com/user-attachments/assets/514c6058-9701-49bc-88e1-58bad947e95a" />
+
+
 A real-time computer vision application that creates an invisibility cloak effect using OpenCV and Flask. Capture a background image and then hold up an object of a specified color to see it become invisible!
 
 ## Features
