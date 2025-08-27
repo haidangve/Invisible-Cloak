@@ -1,4 +1,5 @@
 import os
+import logging
 
 class Config:
     """Application configuration settings"""
@@ -21,6 +22,21 @@ class Config:
     BACKGROUND_CAPTURE_DELAY = 3  # seconds
     DEBUG_LOG_INTERVAL = 30  # frames
     
+    # Error handling settings
+    MAX_RETRY_ATTEMPTS = 3
+    CAMERA_TIMEOUT = 5  # seconds
+    FRAME_READ_TIMEOUT = 2  # seconds
+    
+    # User feedback settings
+    SHOW_SUCCESS_NOTIFICATIONS = True
+    SHOW_ERROR_NOTIFICATIONS = True
+    NOTIFICATION_DURATION = 3000  # milliseconds
+    
     # File paths
     TEMPLATE_FOLDER = 'templates'
     STATIC_FOLDER = 'static'
+    
+    # Logging configuration
+    LOG_LEVEL = logging.INFO
+    LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    LOG_FILE = 'invisibility_cloak.log'

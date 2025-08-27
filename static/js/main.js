@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let colorSelected = false;
   let cameraOn = false; // Default to camera off
   let selectedColorHex = null;
+  let isLoading = false;
 
   // Initialize the application
   function init() {
@@ -26,6 +27,56 @@ document.addEventListener("DOMContentLoaded", function () {
     cameraOn = false; // Ensure camera starts off
     updateColorDisplay();
     updateCameraButton(); // This will set the correct status banner for camera-off state
+  }
+
+  // Show loading state
+  function showLoading(button, text = "Loading...") {
+    if (isLoading) return; // Prevent multiple loading states
+
+    isLoading = true;
+    const originalText = button.innerHTML;
+    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${text}`;
+    button.disabled = true;
+
+    return originalText;
+  }
+
+  // Hide loading state
+  function hideLoading(button, originalText) {
+    isLoading = false;
+    button.innerHTML = originalText;
+    button.disabled = false;
+  }
+
+  // Show notification
+  function showNotification(message, type = "info") {
+    // Remove existing notifications
+    const existingNotification = document.querySelector(".notification");
+    if (existingNotification) {
+      existingNotification.remove();
+    }
+
+    const notification = document.createElement("div");
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+      <i class="fas fa-${
+        type === "success"
+          ? "check-circle"
+          : type === "error"
+          ? "exclamation-circle"
+          : "info-circle"
+      }"></i>
+      <span>${message}</span>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+    }, 3000);
   }
 
   // Update camera button appearance
@@ -129,6 +180,11 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const response = await fetch(endpoint, options);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const result = await response.json();
 
       console.log(`API response from ${endpoint}:`, result);
@@ -141,6 +197,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Capture background function
   async function captureBackground() {
+    if (!cameraOn) {
+      showNotification("Please turn on the camera first", "error");
+      return;
+    }
+
+    const originalText = showLoading(captureBackgroundBtn, "Capturing...");
+
     try {
       updateStatusBanner(
         "Capturing background in 3 seconds... Move out of frame!"
@@ -156,14 +219,22 @@ document.addEventListener("DOMContentLoaded", function () {
         updateStatusBanner(
           "Background captured successfully! Now choose your cloak color."
         );
+        showNotification("Background captured successfully!", "success");
         console.log("Background captured successfully");
       } else {
         updateStatusBanner("Failed to capture background. Please try again.");
+        showNotification(
+          result.error || "Failed to capture background",
+          "error"
+        );
         console.error("Background capture failed");
       }
     } catch (error) {
       updateStatusBanner("Error capturing background. Please try again.");
+      showNotification("Network error. Please check your connection.", "error");
       console.error("Background capture error:", error);
+    } finally {
+      hideLoading(captureBackgroundBtn, originalText);
     }
   }
 
@@ -228,6 +299,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Show color picker modal
   function showColorPicker() {
+    if (!backgroundCaptured) {
+      showNotification("Please capture background first", "error");
+      return;
+    }
+
     // Remove existing color picker if any
     const existingPicker = document.querySelector(".color-picker-modal");
     if (existingPicker) {
@@ -314,6 +390,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Select color function
   async function selectColor(colorHex) {
+    const originalText = showLoading(chooseColorBtn, "Setting...");
+
     try {
       // Convert hex to RGB
       const r = parseInt(colorHex.slice(1, 3), 16);
@@ -335,6 +413,7 @@ document.addEventListener("DOMContentLoaded", function () {
             colorHex
           )} cloak should now be invisible.`
         );
+        showNotification(`Color set to ${getColorName(colorHex)}`, "success");
         console.log("Color selected successfully");
 
         // Close color picker
@@ -344,11 +423,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       } else {
         updateStatusBanner("Failed to set color. Please try again.");
+        showNotification(result.error || "Failed to set color", "error");
         console.error("Color selection failed");
       }
     } catch (error) {
       updateStatusBanner("Error setting color. Please try again.");
+      showNotification("Network error. Please try again.", "error");
       console.error("Color selection error:", error);
+    } finally {
+      hideLoading(chooseColorBtn, originalText);
     }
   }
 
@@ -362,6 +445,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Reset function
   async function reset() {
+    const originalText = showLoading(resetBtn, "Resetting...");
+
     try {
       const result = await makeApiCall("/reset", "POST");
 
@@ -371,26 +456,37 @@ document.addEventListener("DOMContentLoaded", function () {
         selectedColorHex = null;
         updateColorDisplay();
         updateStatusBanner("Reset complete! Ready to start over.");
+        showNotification("Application reset successfully!", "success");
         console.log("Reset successful");
       } else {
         updateStatusBanner("Failed to reset. Please try again.");
+        showNotification(result.error || "Failed to reset", "error");
         console.error("Reset failed");
       }
     } catch (error) {
       updateStatusBanner("Error resetting. Please try again.");
+      showNotification("Network error. Please try again.", "error");
       console.error("Reset error:", error);
+    } finally {
+      hideLoading(resetBtn, originalText);
     }
   }
 
   // Test connection function
   async function testConnection() {
+    const originalText = showLoading(testBtn, "Testing...");
+
     try {
       const result = await makeApiCall("/test");
       updateStatusBanner(`${result.status}`);
+      showNotification("Connection test successful!", "success");
       console.log("Test successful");
     } catch (error) {
       updateStatusBanner("Connection test failed");
+      showNotification("Connection test failed", "error");
       console.error("Test error:", error);
+    } finally {
+      hideLoading(testBtn, originalText);
     }
   }
 
