@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let cameraOn = false; // Default to camera off
   let selectedColorHex = null;
   let isLoading = false;
+  let lockedColor = null; // Track the locked color
 
   // Initialize the application
   function init() {
@@ -310,7 +311,7 @@ document.addEventListener("DOMContentLoaded", function () {
       existingPicker.remove();
     }
 
-    // Create color picker modal
+    // Create color wheel modal
     const modal = document.createElement("div");
     modal.className = "color-picker-modal";
 
@@ -325,67 +326,235 @@ document.addEventListener("DOMContentLoaded", function () {
             <button class="close-button" onclick="this.closest('.color-picker-modal').remove()">×</button>
         `;
 
-    // Color grid
+    // Color grid container
+    const colorGridContainer = document.createElement("div");
+    colorGridContainer.className = "color-grid-container";
+
+    // Create color grid
     const colorGrid = document.createElement("div");
     colorGrid.className = "color-grid";
 
-    // Predefined colors
-    const colors = [
-      "#ff0000",
-      "#ff4500",
-      "#ff8c00",
-      "#ffd700",
-      "#ffff00",
-      "#9acd32",
-      "#32cd32",
-      "#00ff00",
-      "#00fa9a",
-      "#00ffff",
-      "#00bfff",
-      "#0000ff",
-      "#8a2be2",
-      "#9932cc",
-      "#ff00ff",
-      "#ff1493",
-      "#dc143c",
-      "#b22222",
-      "#8b0000",
-      "#800000",
-      "#2f4f4f",
-      "#696969",
-      "#808080",
-      "#a9a9a9",
-      "#c0c0c0",
-      "#d3d3d3",
-      "#dda0dd",
-      "#ee82ee",
-      "#da70d6",
-      "#ba55d3",
-      "#9370db",
-      "#8a2be2",
-    ];
+    // Color preview
+    const colorPreview = document.createElement("div");
+    colorPreview.className = "color-preview-display";
+    colorPreview.innerHTML = `
+      <div class="preview-swatch" id="previewSwatch"></div>
+      <div class="preview-info">
+        <div class="preview-hex" id="previewHex">#FF0000</div>
+        <div class="preview-rgb" id="previewRgb">RGB(255, 0, 0)</div>
+      </div>
+    `;
 
-    colors.forEach((color) => {
-      const colorOption = document.createElement("div");
-      colorOption.className = "color-option";
-      colorOption.style.backgroundColor = color;
-      colorOption.onclick = () => selectColor(color);
-      colorGrid.appendChild(colorOption);
-    });
+    // Apply button
+    const applyButton = document.createElement("button");
+    applyButton.className = "apply-color-btn";
+    applyButton.innerHTML = '<i class="fas fa-magic"></i> Apply Color';
+    applyButton.onclick = () => applySelectedColor();
 
-    // Custom color input
-    const customColor = document.createElement("div");
-    customColor.className = "custom-color";
-    customColor.innerHTML = `
-            <input type="color" id="customColorInput" value="#ff0000">
-            <button onclick="selectCustomColor()">Use Custom</button>
-        `;
+    colorGridContainer.appendChild(colorGrid);
+    colorGridContainer.appendChild(colorPreview);
 
     container.appendChild(header);
-    container.appendChild(colorGrid);
-    container.appendChild(customColor);
+    container.appendChild(colorGridContainer);
+    container.appendChild(applyButton);
     modal.appendChild(container);
     document.body.appendChild(modal);
+
+    // Initialize color grid
+    initializeColorGrid(colorGrid, colorPreview);
+  }
+
+  // Initialize color grid functionality
+  function initializeColorGrid(colorGrid, colorPreview) {
+    const previewSwatch = colorPreview.querySelector("#previewSwatch");
+    const previewHex = colorPreview.querySelector("#previewHex");
+    const previewRgb = colorPreview.querySelector("#previewRgb");
+
+    // Define color palette with magical names
+    const colorPalette = [
+      { hex: "#ff0000", name: "Crimson Red" },
+      { hex: "#ff4500", name: "Phoenix Orange" },
+      { hex: "#ff8c00", name: "Golden Fire" },
+      { hex: "#ffd700", name: "Gryffindor Gold" },
+      { hex: "#ffff00", name: "Lumos Yellow" },
+      { hex: "#9acd32", name: "Slytherin Green" },
+      { hex: "#32cd32", name: "Emerald Green" },
+      { hex: "#00ff00", name: "Forbidden Forest" },
+      { hex: "#00fa9a", name: "Mermaid Lagoon" },
+      { hex: "#00ffff", name: "Ravenclaw Blue" },
+      { hex: "#00bfff", name: "Sky Blue" },
+      { hex: "#0000ff", name: "Midnight Blue" },
+      { hex: "#8a2be2", name: "Purple Haze" },
+      { hex: "#9932cc", name: "Amethyst" },
+      { hex: "#ff00ff", name: "Magical Pink" },
+      { hex: "#ff1493", name: "Rose Petal" },
+      { hex: "#dc143c", name: "Blood Red" },
+      { hex: "#b22222", name: "Dark Ruby" },
+      { hex: "#8b0000", name: "Shadow Red" },
+      { hex: "#800000", name: "Vampire Red" },
+      { hex: "#ff6347", name: "Tomato Red" },
+      { hex: "#ff7f50", name: "Coral Orange" },
+      { hex: "#ffa500", name: "Pure Orange" },
+      { hex: "#ffd700", name: "Golden Yellow" },
+      { hex: "#adff2f", name: "Green Yellow" },
+      { hex: "#7fff00", name: "Chartreuse" },
+      { hex: "#00ff7f", name: "Spring Green" },
+      { hex: "#40e0d0", name: "Turquoise" },
+      { hex: "#00ced1", name: "Dark Turquoise" },
+      { hex: "#1e90ff", name: "Dodger Blue" },
+      { hex: "#4169e1", name: "Royal Blue" },
+      { hex: "#8a2be2", name: "Blue Violet" },
+      { hex: "#9370db", name: "Medium Purple" },
+      { hex: "#ba55d3", name: "Medium Orchid" },
+      { hex: "#da70d6", name: "Orchid" },
+      { hex: "#ee82ee", name: "Violet" },
+      { hex: "#dda0dd", name: "Plum" },
+      { hex: "#ff69b4", name: "Hot Pink" },
+      { hex: "#ff1493", name: "Deep Pink" },
+      { hex: "#c71585", name: "Medium Violet Red" },
+      { hex: "#dc143c", name: "Crimson" },
+      { hex: "#b22222", name: "Fire Brick" },
+      { hex: "#8b0000", name: "Dark Red" },
+      { hex: "#800000", name: "Maroon" },
+      { hex: "#2f4f4f", name: "Dark Slate Gray" },
+      { hex: "#696969", name: "Dim Gray" },
+      { hex: "#808080", name: "Gray" },
+      { hex: "#a9a9a9", name: "Dark Gray" },
+      { hex: "#c0c0c0", name: "Silver" },
+      { hex: "#d3d3d3", name: "Light Gray" },
+      { hex: "#f5f5dc", name: "Beige" },
+      { hex: "#f4a460", name: "Sandy Brown" },
+      { hex: "#d2691e", name: "Chocolate" },
+      { hex: "#8b4513", name: "Saddle Brown" },
+      { hex: "#654321", name: "Dark Brown" },
+    ];
+
+    // Create color grid
+    colorPalette.forEach((color, index) => {
+      const colorSwatch = document.createElement("div");
+      colorSwatch.className = "color-swatch-option";
+      colorSwatch.style.backgroundColor = color.hex;
+      colorSwatch.setAttribute("data-color", color.hex);
+      colorSwatch.setAttribute("data-name", color.name);
+      colorSwatch.title = color.name;
+
+      // Handle hover for preview (only if no color is locked)
+      colorSwatch.addEventListener("mouseenter", function () {
+        if (!lockedColor) {
+          updateColorPreview(color.hex, false);
+        }
+      });
+
+      // Handle click to lock color
+      colorSwatch.addEventListener("click", function () {
+        lockedColor = color.hex;
+        updateColorPreview(color.hex, true);
+        showLockFeedback();
+
+        // Update visual state of all swatches
+        document.querySelectorAll(".color-swatch-option").forEach((swatch) => {
+          swatch.classList.remove("selected");
+        });
+        colorSwatch.classList.add("selected");
+      });
+
+      colorGrid.appendChild(colorSwatch);
+    });
+
+    // Update color preview
+    function updateColorPreview(color, updateSelected = true) {
+      previewSwatch.style.backgroundColor = color;
+      previewHex.textContent = color.toUpperCase();
+
+      const rgb = hexToRgb(color);
+      if (rgb) {
+        previewRgb.textContent = `RGB(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+      }
+
+      // Add visual indicator if color is locked
+      if (lockedColor && color === lockedColor) {
+        previewSwatch.style.border = "3px solid #c8a951";
+        previewSwatch.style.boxShadow = "0 0 10px rgba(200, 169, 81, 0.4)";
+      } else {
+        previewSwatch.style.border = "3px solid rgba(200, 169, 81, 0.4)";
+        previewSwatch.style.boxShadow = "";
+      }
+    }
+  }
+
+  // Apply selected color
+  function applySelectedColor() {
+    //use locked color if available, otherwise use preview color
+    const colorToApply =
+      lockedColor || document.querySelector("#previewHex")?.textContent;
+    if (colorToApply) {
+      selectColor(colorToApply);
+      //clear locked color
+      lockedColor = null;
+    }
+  }
+
+  // Utility functions
+  function hslToHex(h, s, l) {
+    h /= 360;
+    s /= 100;
+    l /= 100;
+
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h * 6) % 2) - 1));
+    const m = l - c / 2;
+    let r = 0,
+      g = 0,
+      b = 0;
+
+    if (0 <= h && h < 1 / 6) {
+      r = c;
+      g = x;
+      b = 0;
+    } else if (1 / 6 <= h && h < 1 / 3) {
+      r = x;
+      g = c;
+      b = 0;
+    } else if (1 / 3 <= h && h < 1 / 2) {
+      r = 0;
+      g = c;
+      b = x;
+    } else if (1 / 2 <= h && h < 2 / 3) {
+      r = 0;
+      g = x;
+      b = c;
+    } else if (2 / 3 <= h && h < 5 / 6) {
+      r = x;
+      g = 0;
+      b = c;
+    } else if (5 / 6 <= h && h <= 1) {
+      r = c;
+      g = 0;
+      b = x;
+    }
+
+    const rHex = Math.round((r + m) * 255)
+      .toString(16)
+      .padStart(2, "0");
+    const gHex = Math.round((g + m) * 255)
+      .toString(16)
+      .padStart(2, "0");
+    const bHex = Math.round((b + m) * 255)
+      .toString(16)
+      .padStart(2, "0");
+
+    return `#${rHex}${gHex}${bHex}`;
+  }
+
+  function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
   }
 
   // Select color function
@@ -432,14 +601,6 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Color selection error:", error);
     } finally {
       hideLoading(chooseColorBtn, originalText);
-    }
-  }
-
-  // Select custom color function
-  function selectCustomColor() {
-    const customColorInput = document.getElementById("customColorInput");
-    if (customColorInput) {
-      selectColor(customColorInput.value);
     }
   }
 
@@ -506,8 +667,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Make functions globally available for onclick handlers
   window.selectColor = selectColor;
-  window.selectCustomColor = selectCustomColor;
 
   // Initialize the application
   init();
+
+  function showLockFeedback() {
+    //create a brief visual feedback
+    const previewSwatch = document.querySelector("#previewSwatch");
+    if (previewSwatch) {
+      previewSwatch.style.transform = "scale(1.1)";
+      previewSwatch.style.boxShadow = "0 0 20px rgba(200, 169, 81, 0.6)";
+
+      //reset after 0.5 seconds
+      setTimeout(() => {
+        previewSwatch.style.transform = "scale(1)";
+      }, 200);
+    }
+    showNotification("Color locked!", "success");
+  }
 });
