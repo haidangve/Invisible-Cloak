@@ -450,3 +450,25 @@
     height: 25px;
   }
 }
+
+/* FPS Display */
+.fps-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin-top: 10px;
+}
+
+.fps-label {
+  color: #ecf0f1;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.fps-value {
+  color: #d4af37;
+  font-weight: 600;
+  font-size: 14px;
+}

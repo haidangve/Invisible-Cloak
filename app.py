@@ -66,6 +66,11 @@ def status_route():
     """Get application status"""
     return api_routes.get_status()
 
+@app.route('/fps')
+def fps_route():
+    """Get current FPS for resume metrics"""
+    return api_routes.get_fps()
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""

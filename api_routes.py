@@ -62,3 +62,18 @@ class APIRoutes:
         """API endpoint to reset the application"""
         self.video_streamer.reset()
         return jsonify({'success': True})
+
+    #Methods to get FPS
+    def get_fps(self):
+        """API endpoint to get current FPS"""
+        try: 
+            current_fps = self.video_streamer.get_fps()
+            return jsonify({
+                'success': True,
+                'fps': current_fps
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': f'Failed to get FPS: {str(e)}'
+            })

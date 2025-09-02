@@ -12,6 +12,11 @@ class VideoStreamer:
         self.is_capturing_background = False
         self.effect_applied = False
         
+        # FPS tracking
+        self.fps_count = 0
+        self.fps_time = time.time()
+        self.current_fps = 0
+        
     def initialize(self):
         """Initialize the video streamer"""
         return self.camera_manager.initialize()
@@ -42,8 +47,19 @@ class VideoStreamer:
                     print("Invisibility effect is now active!")
                     self.effect_applied = True
             
+            # Update FPS
+            self.fps_count += 1
+            if time.time() - self.fps_time >= 1.0:
+                self.current_fps = self.fps_count
+                self.fps_count = 0
+                self.fps_time = time.time()
+            
             # Encode and yield frame
             yield self._encode_frame(frame)
+    
+    def get_fps(self):
+        """Get current FPS"""
+        return self.current_fps
     
     def _encode_frame(self, frame):
         """Encode frame as JPEG for web streaming"""

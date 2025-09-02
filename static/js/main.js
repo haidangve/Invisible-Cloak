@@ -28,6 +28,32 @@ document.addEventListener("DOMContentLoaded", function () {
     cameraOn = false; // Ensure camera starts off
     updateColorDisplay();
     updateCameraButton(); // This will set the correct status banner for camera-off state
+
+    //Start FPS monitoring when camera is on
+    startFPSMonitoring();
+  }
+
+  //FPS monitoring
+  function startFPSMonitoring() {
+    setInterval(async () => {
+      if (cameraOn) {
+        await updateFPSDisplay();
+      }
+    }, 1500);
+  }
+
+  async function updateFPSDisplay() {
+    try {
+      const result = await makeApiCall("/fps");
+      if (result.success) {
+        const fpsElement = document.getElementById("fpsValue");
+        if (fpsElement) {
+          fpsElement.textContent = result.fps;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update FPS:", error);
+    }
   }
 
   // Show loading state
